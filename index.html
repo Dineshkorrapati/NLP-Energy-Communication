@@ -267,7 +267,7 @@ footer a{color:#fff}
         <div class="fig">
           <div class="controls" role="group" aria-label="Choose a party" id="partyBtns"></div>
           <div class="chart" id="partyChart"></div>
-          <div class="legend"><span><i style="background:var(--env)"></i>Environmental</span><span><i style="background:var(--soc)"></i>Social</span><span><i style="background:var(--geo)"></i>Geopolitical</span></div>
+          <div class="legend"><span><i style="width:12px;height:12px;background:var(--env)"></i>Environmental</span><span><i style="width:12px;height:12px;background:var(--soc)"></i>Social</span><span><i style="width:12px;height:12px;background:var(--geo)"></i>Geopolitical</span></div>
         </div>
         <figcaption>Share of energy speeches raising each risk, by party and legislative period.</figcaption>
       </figure>
@@ -461,23 +461,46 @@ industry:`<svg viewBox="0 0 320 170" width="100%" height="100%" preserveAspectRa
   const bb=document.getElementById('partyBtns');
   Object.keys(D).forEach(p=>{const b=document.createElement('button');b.type='button';b.textContent=p;b.setAttribute('aria-pressed',p===cur);
     b.onclick=()=>{cur=p;bb.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));party();};bb.appendChild(b);});
+  let prevV=null;
   function party(){
-    const box=document.getElementById('partyChart');box.innerHTML='';
-    const W=700,H=300,m={l:42,r:110,t:14,b:32};
+    const box=document.getElementById('partyChart');box.innerHTML='';box.style.position='relative';
+    const W=700,H=330,m={l:46,r:12,t:22,b:48};
     const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'Risk shares for '+cur},box);
-    const x=i=>m.l+i*(W-m.l-m.r)/3,y=v=>m.t+(100-v)/100*(H-m.t-m.b);
-    [0,25,50,75,100].forEach(v=>{el('line',{x1:m.l,x2:W-m.r,y1:y(v),y2:y(v),stroke:css('--line')},svg);tx(svg,m.l-8,y(v)+4,v+'%',{'text-anchor':'end','font-size':11,fill:css('--ink2')});});
-    per.forEach((p,i)=>tx(svg,x(i),H-10,p,{'text-anchor':'middle','font-size':12,fill:css('--ink2')}));
-    const ends=[];
-    [['env','--env','Environmental'],['soc','--soc','Social'],['geo','--geo','Geopolitical']].forEach(([k,c,n])=>{
-      const v=D[cur][k],col=css(c);let d='',pen=false;
-      v.forEach((a,i)=>{if(a==null){pen=false;return;}d+=(pen?'L':'M')+x(i)+' '+y(a)+' ';pen=true;});
-      el('path',{d,fill:'none',stroke:col,'stroke-width':2.5},svg);
-      v.forEach((a,i)=>{if(a==null)return;el('circle',{cx:x(i),cy:y(a),r:4.5,fill:css('--surface'),stroke:col,'stroke-width':2},svg);tx(svg,x(i),y(a)-10,Math.round(a),{'text-anchor':'middle','font-size':11,fill:col,'font-weight':600});});
-      let li=v.length-1;while(li>=0&&v[li]==null)li--;if(li>=0)ends.push({x:x(li),y:y(v[li]),n,col});
+    const tip=document.createElement('div');
+    tip.style.cssText='position:absolute;pointer-events:none;opacity:0;transition:opacity .12s;background:'+css('--ink')+';color:'+css('--bg')+';font-size:.8rem;line-height:1.35;padding:.4rem .6rem;border-radius:6px;white-space:nowrap;transform:translate(-50%,-100%);z-index:2';
+    box.appendChild(tip);
+    const ph=H-m.t-m.b,gw=(W-m.l-m.r)/4,bw=Math.min(46,gw*0.22),gap=4;
+    const top=(cur==='All parties'||Math.max(...['env','soc','geo'].flatMap(k=>D[cur][k].filter(a=>a!=null)))<=80)?80:100;
+    const yy=v=>m.t+ph-v/top*ph;
+    for(let v=0;v<=top;v+=top===80?10:20){el('line',{x1:m.l,x2:W-m.r,y1:yy(v),y2:yy(v),stroke:css('--line'),'stroke-width':v===0?1.2:1},svg);tx(svg,m.l-8,yy(v)+4,v+'%',{'text-anchor':'end','font-size':11,fill:css('--ink2')});}
+    const lbl=['18th','19th','20th','21st'];
+    per.forEach((p,i)=>{const cx=m.l+gw*(i+.5);tx(svg,cx,H-m.b+20,lbl[i]+' Bundestag',{'text-anchor':'middle','font-size':12,fill:css('--ink'),'font-weight':600});tx(svg,cx,H-m.b+36,p,{'text-anchor':'middle','font-size':11,fill:css('--ink2')});});
+    const keys=[['env','--env','Environmental'],['soc','--soc','Social'],['geo','--geo','Geopolitical']];
+    const bars=[];
+    per.forEach((p,i)=>{
+      const cx=m.l+gw*(i+.5),x0=cx-(3*bw+2*gap)/2;
+      if(keys.every(([k])=>D[cur][k][i]==null)){tx(svg,cx,yy(top/2),'No seats',{'text-anchor':'middle','font-size':12,fill:css('--ink2'),'font-style':'italic'});return;}
+      keys.forEach(([k,c,n],j)=>{
+        const v=D[cur][k][i];if(v==null)return;
+        const from=prevV&&prevV[k][i]!=null?prevV[k][i]:0;
+        const x=x0+j*(bw+gap),col=css(c);
+        const r=el('rect',{x,y:yy(from),width:bw,height:yy(0)-yy(from),fill:col,rx:2},svg);
+        const t=tx(svg,x+bw/2,yy(from)-6,Math.round(from),{'text-anchor':'middle','font-size':11,fill:css('--ink'),'font-weight':600});
+        const hit=el('rect',{x:x-gap/2,y:m.t,width:bw+gap,height:ph,fill:'transparent',style:'cursor:pointer'},svg);
+        bars.push({r,t,from,v,x,col});
+        hit.addEventListener('mouseenter',()=>{bars.forEach(b=>{b.r.setAttribute('fill-opacity',b.r===r?1:.3);b.t.setAttribute('opacity',b.r===r?1:.3);});
+          tip.innerHTML=`<b>${n} risk</b><br>${cur} · ${lbl[i]} (${p})<br>${v.toFixed(1)}% of energy speeches`;
+          const bb=box.getBoundingClientRect(),sr=svg.getBoundingClientRect(),k2=sr.width/W;
+          tip.style.left=(sr.left-bb.left+box.scrollLeft+(x+bw/2)*k2)+'px';tip.style.top=(sr.top-bb.top+yy(v)*k2-10)+'px';tip.style.opacity=1;});
+        hit.addEventListener('mouseleave',()=>{bars.forEach(b=>{b.r.setAttribute('fill-opacity',1);b.t.setAttribute('opacity',1);});tip.style.opacity=0;});
+      });
     });
-    ends.sort((a,b)=>a.y-b.y);for(let i=1;i<ends.length;i++)if(ends[i].y-ends[i-1].y<16)ends[i].y=ends[i-1].y+16;
-    ends.forEach(e=>tx(svg,e.x+14,e.y+4,e.n,{'font-size':12,fill:e.col,'font-weight':600}));
+    prevV=JSON.parse(JSON.stringify(D[cur]));
+    const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,dur=reduce?0:550,t0=performance.now();
+    const ease=u=>1-Math.pow(1-u,3);
+    (function step(now){const u=dur?Math.min(1,(now-t0)/dur):1,e=ease(u);
+      bars.forEach(b=>{const v=b.from+(b.v-b.from)*e;b.r.setAttribute('y',yy(v));b.r.setAttribute('height',yy(0)-yy(v));b.t.setAttribute('y',yy(v)-6);b.t.textContent=Math.round(v);});
+      if(u<1)requestAnimationFrame(step);})(t0);
   }
 
   /* gas chart */
