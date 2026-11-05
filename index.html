@@ -155,7 +155,15 @@ figcaption{font-size:.86rem;color:var(--ink2);margin-top:.7rem;max-width:70ch}
 .cells{display:grid;grid-template-columns:repeat(26,minmax(0,1fr));gap:2px}
 .cells s{display:block;aspect-ratio:1;border-radius:1.5px;background:var(--cell);text-decoration:none}
 .covrow .c{color:var(--ink2);text-align:right;font-variant-numeric:tabular-nums}
-@media (max-width:560px){.covrow{grid-template-columns:1fr 2rem}.covrow .cells{grid-column:1/-1;grid-row:2}}
+.covrow.ids{padding-bottom:.35rem}
+.covrow.ids .cells span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.62rem;line-height:1;color:var(--ink2);text-align:left;font-variant-numeric:tabular-nums;justify-self:center}
+.covrow.ids .cells span.on{color:var(--ink);font-weight:600}
+.cells s.hl{outline:1.5px solid var(--ink2);outline-offset:0}
+.cells s.on.hl{outline-color:var(--ink)}
+.covrow:not(.ids):hover>div:first-child{color:var(--ink);font-weight:600}
+.covlegend{display:flex;flex-wrap:wrap;gap:1rem;font-size:.8rem;color:var(--ink2);margin-top:.9rem}
+.covlegend s{display:inline-block;width:10px;height:10px;border-radius:1.5px;vertical-align:-1px;margin-right:.35rem;text-decoration:none}
+@media (max-width:560px){.covrow{grid-template-columns:1fr 2rem}.covrow .cells{grid-column:1/-1;grid-row:2}.covrow.ids>div:first-child,.covrow.ids .c{display:none}}
 
 /* team */
 .people{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1.5rem}
@@ -365,11 +373,11 @@ footer a{color:#fff}
       </ol>
       <h2>Key findings</h2>
       <ul class="keypts">
-        <li><b>Technical levers come first.</b> Replacing raw materials came up in every interview, fuel switching in 24 of 26.</li>
-        <li><b>External conditions weigh heavily.</b> Power prices, grids, subsidies and demand for green products appear in most interviews.</li>
+        <li><b>Strategy and preconditions come first.</b> Technical pillars, targets &amp; timelines, transformation prerequisites and market dynamics came up in all 26 interviews.</li>
+        <li><b>External conditions weigh heavily.</b> Workforce alignment, social acceptance, policy certainty and grid connections each appear in at least 21 of 26 interviews.</li>
       </ul>
       <figure><div class="fig cov" id="covGrid"></div>
-      <figcaption>Interviews (of 26) in which each topic was discussed. Each square is one interview. Preliminary results.</figcaption></figure>
+      <figcaption>Top topics across the 26 interviews. Each column is one interview (B01–B30); a filled square means the topic was discussed in that interview, and the number on the right counts them. Hover a square to see the interview. Preliminary results.</figcaption></figure>
     </div>
     <p class="back"><a href="#research" data-go="research">Back to all projects</a></p>
   </div></section>
@@ -594,16 +602,52 @@ industry:`<svg viewBox="0 0 320 170" width="100%" height="100%" preserveAspectRa
       tx(svg,x(yr),H-10,String(yr),{'text-anchor':'middle','font-size':11,fill:css('--ink2')});});
   }
 
-  /* coverage */
+  /* coverage: topic x interview matrix */
   (function(){
-    const cov=[['Corporate decarbonisation strategy','--purple',[['Feedstock & material substitution',26],['Fuel switching & grid integration',24],['Domestic policy alignment',23],['Energy efficiency',22]]],
-      ['Innovation and investment','--geo',[['EU technology & third-country investment',25],['Bridge technology lifespan',21],['Follow-up R&D investment',20]]],
-      ['External framework conditions','--soc',[['Power prices & tariffs',24],['Asset decommissioning',22],['Subsidies & funding',22],['Grid & hydrogen infrastructure',22],['Green product demand',22]]]];
+    const ids=['B01','B02','B03','B06','B07','B08','B10','B11','B12','B13','B14','B16','B17','B18','B19','B20','B21','B22','B23','B24','B25','B26','B27','B28','B29','B30'];
+    const cov=[['Techno- & socio-economic factors','--soc',[
+        ['Transformation prerequisites','11111111111111111111111111'],
+        ['Market dynamics','11111111111111111111111111'],
+        ['Workforce alignment','11011111111111111111111111'],
+        ['Social acceptance','11011111111100111101111111'],
+        ['Political climate & policy certainty','10011111110101111111111111'],
+        ['Product characteristics','11111111111111101011111100'],
+        ['Regional conditions & grid connections','11111111110011010111111011'],
+        ['Regional value creation','01011111110111011111111101']]],
+      ['Innovation & investment management','--geo',[
+        ['Bridging technologies','11111111111111011111101111'],
+        ['Transformation-driven innovation','11111111111111111111101001'],
+        ['Technical knowledge investment','11111111111111111111100011'],
+        ['Innovation scaling support','10111111111011111111001111'],
+        ['Investment readiness','11111111111100100111111111'],
+        ['Reputational investment','11111111110111111111001011'],
+        ['Commercial tech maturity','11111111111101011010110001']]],
+      ['Corporate decarbonisation strategy','--purple',[
+        ['Technical pillars','11111111111111111111111111'],
+        ['Targets & timelines','11111111111111111111111111'],
+        ['Economic viability vs. climate goals','11111111111110111111111111'],
+        ['Decarbonisation drivers','11011111111111111111111111'],
+        ['Fuel switching & grid integration','01111111110011111111011000'],
+        ['Industry sector roadmap','11011111111101001111101100']]]];
+    const esc=t=>t.replace(/&/g,'&amp;');
     const box=document.getElementById('covGrid');
-    cov.forEach(([d,c,items])=>{const h=document.createElement('h4');h.innerHTML='<i style="background:var('+c+')"></i>'+d;box.appendChild(h);
-      items.forEach(([t,n])=>{const r=document.createElement('div');r.className='covrow';r.setAttribute('aria-label',t+': '+n+' of 26 interviews');
-        let cells='';for(let i=0;i<26;i++)cells+='<s'+(i<n?' style="background:var('+c+')"':'')+'></s>';
-        r.innerHTML='<div>'+t+'</div><div class="cells" aria-hidden="true">'+cells+'</div><div class="c">'+n+'</div>';box.appendChild(r);});});
+    const head=document.createElement('div');head.className='covrow ids';head.setAttribute('aria-hidden','true');
+    head.innerHTML='<div style="color:var(--ink2);font-size:.78rem">Interview</div><div class="cells">'+ids.map(id=>'<span>'+id+'</span>').join('')+'</div><div class="c"></div>';
+    box.appendChild(head);
+    cov.forEach(([d,c,items])=>{const h=document.createElement('h4');h.innerHTML='<i style="background:var('+c+')"></i>'+esc(d);box.appendChild(h);
+      items.forEach(([t,bits])=>{const n=[...bits].filter(b=>b==='1').length;
+        const r=document.createElement('div');r.className='covrow';
+        r.setAttribute('aria-label',t+': discussed in '+n+' of 26 interviews ('+ids.filter((_,i)=>bits[i]==='1').join(', ')+')');
+        let cells='';for(let i=0;i<26;i++){const on=bits[i]==='1';cells+='<s data-i="'+i+'"'+(on?' class="on" style="background:var('+c+')"':'')+' title="'+esc(t)+' · '+ids[i]+(on?': discussed':': not discussed')+'"></s>';}
+        r.innerHTML='<div>'+esc(t)+'</div><div class="cells" aria-hidden="true">'+cells+'</div><div class="c">'+n+'</div>';box.appendChild(r);});});
+    const lg=document.createElement('div');lg.className='covlegend';lg.setAttribute('aria-hidden','true');
+    lg.innerHTML='<span><s style="background:var(--ink2)"></s>Discussed</span><span><s style="background:var(--cell)"></s>Not discussed</span>';box.appendChild(lg);
+    /* highlight the hovered interview column */
+    const heads=head.querySelectorAll('.cells span');
+    function hl(i){box.querySelectorAll('s.hl').forEach(e=>e.classList.remove('hl'));heads.forEach(e=>e.classList.remove('on'));
+      if(i==null)return;box.querySelectorAll('.covrow s[data-i="'+i+'"]').forEach(e=>e.classList.add('hl'));heads[i].classList.add('on');}
+    box.addEventListener('mouseover',e=>{const t=e.target.closest('s[data-i]');hl(t?t.dataset.i:null);});
+    box.addEventListener('mouseleave',()=>hl(null));
   })();
 
   function drawAll(){party();gasChart();}
